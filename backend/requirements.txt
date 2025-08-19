@@ -1,0 +1,15 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==11.0.3
+pydantic==2.5.0
+transformers>=4.30.0
+torch>=2.0.0
+accelerate>=0.20.0
+triton==3.4.0
+python-multipart==0.0.6
+mysql-connector-python==8.2.0
+sqlalchemy==2.0.23
+aiofiles==23.2.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0

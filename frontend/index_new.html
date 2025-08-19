@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-OSS</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+    <link rel="shortcut icon" type="image/svg+xml" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左侧边栏 - 完全仿照Ollama */
+        .sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .new-chat-button, .settings-button {
+            width: 100%;
+            padding: 10px 16px;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .new-chat-button:hover, .settings-button:hover {
+            background-color: #333;
+        }
+
+        /* 設置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-content {
+            padding: 24px;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .settings-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .close-btn:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .setting-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            font-weight: 500;
+            color: #666;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .setting-actions {
+            margin-top: 32px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .apply-btn, .reset-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .apply-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .apply-btn:hover {
+            background: #0056b3;
+        }
+
+        .reset-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .reset-btn:hover {
+            background: #e9ecef;
+        }
+
+        .clear-history-btn {
+            width: 100%;
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-history-btn:hover {
+            background: #c82333;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            padding: 16px;
+        }
+        
+        .search-container {
+            margin-bottom: 16px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #f8f9fa;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+            background: #fff;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .chat-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-item-content {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .chat-item-actions {
+            display: none;
+            gap: 4px;
+        }
+        
+        .chat-item:hover .chat-item-actions {
+            display: flex;
+        }
+        
+        .chat-action-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chat-action-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .chat-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .chat-item.active {
+            background-color: #e6f3ff;
+            color: #0066cc;
+        }
+
+        /* 主聊天区域 - 完全仿照Ollama */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: calc(100vh - 0px);
+            max-height: calc(100vh - 0px);
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            min-height: 0;
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        /* WebKit 滾動條樣式 */
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .welcome-message {
+            text-align: center;
+            margin-top: 20vh;
+        }
+
+        .welcome-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.assistant {
+            align-items: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background-color: #f1f3f4;
+            color: #333;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background-color: #f1f3f4;
+            border-radius: 18px;
+            max-width: 80px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #999;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .typing-text {
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* 输入区域 - 完全仿照Ollama */
+        .input-section {
+            padding: 20px 32px 32px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-container {
+            position: relative;
+            background-color: #f8f9fa;
+            border-radius: 24px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            align-items: flex-end;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+
+        .input-container:focus-within {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            resize: none;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.5;
+            min-height: 24px;
+            max-height: 150px;
+            font-family: inherit;
+            color: #333;
+        }
+
+        .message-input::placeholder {
+            color: #999;
+        }
+
+        .send-button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            background-color: #dee2e6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stop-button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .stop-button:hover {
+            background-color: #c82333;
+        }
+
+        /* 底部状态栏 - 仿照Ollama */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .model-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .model-select {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #dc3545;
+        }
+
+        .status-dot.connected {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 左侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-title">GPT-OSS</div>
+                <button class="new-chat-button" onclick="startNewChat()">
+                    <span>💬</span>
+                    新对话
+                </button>
+                <button class="settings-button" onclick="toggleSettings()">
+                    <span>⚙️</span>
+                    设置
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="搜索對話..." class="search-input">
+                </div>
+                <div class="section-title">最近對話</div>
+                <div id="chat-history">
+                    <!-- 聊天历史将动态加载 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="chat-area">
+                <div class="messages-container" id="messages">
+                    <div class="welcome-message" id="welcome">
+                        <div class="welcome-icon">🤖</div>
+                        <div class="welcome-title">欢迎使用 GPT-OSS</div>
+                        <div class="welcome-subtitle">基于 openai/gpt-oss-20b 的智能对话系统</div>
+                    </div>
+                </div>
+                
+                <div class="input-section">
+                    <div class="input-container">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput"
+                            placeholder="发送消息..."
+                            rows="1"
+                        ></textarea>
+                        <button class="send-button" id="sendButton" disabled>
+                            <span>↑</span>
+                        </button>
+                        <button class="stop-button" id="stopButton">
+                            <span>⬛</span>
+                        </button>
+                    </div>
+                    
+                    <div class="status-bar">
+                        <div class="model-info">
+                            <span>🌐</span>
+                            <select class="model-select" id="modelSelect">
+                                <option value="gpt-oss-20b">gpt-oss-20b</option>
+                            </select>
+                        </div>
+                        <div class="connection-status">
+                            <div class="status-dot" id="statusDot"></div>
+                            <span id="statusText">离线</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h3>回應設置</h3>
+                    <button class="close-btn" onclick="toggleSettings()">✕</button>
+                </div>
+                
+                <div class="setting-group">
+                    <label>回應長度:</label>
+                    <select id="responseLength">
+                        <option value="512">簡短 (512 tokens)</option>
+                        <option value="1024">中等 (1024 tokens)</option>
+                        <option value="2048" selected>完整 (2048 tokens)</option>
+                        <option value="4096">詳細 (4096 tokens)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label>創造性 (Temperature):</label>
+                    <div class="slider-container">
+                        <input type="range" id="temperature" min="0.1" max="1.5" step="0.1" value="0.7">
+                        <span class="slider-value" id="temperatureValue">0.7</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>回應模式:</label>
+                    <select id="responseMode">
+                        <option value="balanced" selected>平衡 (推薦)</option>
+                        <option value="creative">創造性</option>
+                        <option value="focused">專注</option>
+                        <option value="detailed">詳細說明</option>
+                    </select>
+                </div>
+                
+                <div class="setting-actions">
+                    <button class="apply-btn" onclick="applySettings()">套用設置</button>
+                    <button class="reset-btn" onclick="resetSettings()">重置預設</button>
+                </div>
+                
+                <hr style="margin: 24px 0; border: 1px solid #e9ecef;">
+                
+                <div class="setting-group">
+                    <label>對話管理:</label>
+                    <button class="clear-history-btn" onclick="clearHistory()">清除對話歷史</button>
+                    <small style="color: #666; display: block; margin-top: 4px;">
+                        清除後將失去上下文記憶，但不影響當前頁面顯示的對話
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GPTOSSChat {
+            constructor() {
+                this.ws = null;
+                this.sessionId = this.generateSessionId();
+                this.isConnected = false;
+                this.isGenerating = false;
+                
+                // 初始化設置
+                this.settings = {
+                    responseLength: 2048,
+                    temperature: 0.7,
+                    responseMode: 'balanced'
+                };
+                this.loadSettings();
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.connect();
+                console.log('GPT-OSS Chat 初始化完成');
+            }
+            
+            generateSessionId() {
+                return 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            setupEventListeners() {
+                const input = document.getElementById('messageInput');
+                const sendBtn = document.getElementById('sendButton');
+                const stopBtn = document.getElementById('stopButton');
+                
+                // 输入框事件
+                input.addEventListener('input', () => {
+                    this.autoResize(input);
+                    sendBtn.disabled = !input.value.trim() || this.isGenerating;
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                // 按钮事件
+                sendBtn.addEventListener('click', () => this.sendMessage());
+                stopBtn.addEventListener('click', () => this.stopGeneration());
+                
+                console.log('事件监听器设置完成');
+            }
+            
+            autoResize(textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            }
+            
+            connect() {
+                const wsUrl = `ws://127.0.0.1:8000/ws/${this.sessionId}`;
+                console.log('Connecting to WebSocket:', wsUrl);
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    this.updateStatus('在線', true);
+                    console.log('WebSocket connected successfully');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    this.handleMessage(data);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.updateStatus('連接錯誤', false);
+                };
+                
+                this.ws.onclose = () => {
+                    this.isConnected = false;
+                    this.updateStatus('離線', false);
+                    console.log('WebSocket connection closed');
+                    
+                    // 3秒后重连
+                    setTimeout(() => this.connect(), 3000);
+                };
+            }
+            
+            updateStatus(text, connected) {
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                
+                statusText.textContent = text;
+                if (connected) {
+                    statusDot.classList.add('connected');
+                } else {
+                    statusDot.classList.remove('connected');
+                }
+            }
+            
+            
+            handleMessage(data) {
+                console.log('收到消息:', data);
+                
+                switch (data.type) {
+                    case 'user_message':
+                        // 用户消息确认，不需要处理
+                        break;
+                        
+                    case 'generation_start':
+                        this.showTyping();
+                        this.setGenerating(true);
+                        break;
+                        
+                    case 'generation_progress':
+                        this.updateTypingMessage(data.message);
+                        break;
+                        
+                    case 'ai_response':
+                        this.hideTyping();
+                        this.addMessage(data.message, 'assistant');
+                        this.setGenerating(false);
+                        break;
+                        
+                    case 'generation_end':
+                        this.hideTyping();
+                        this.setGenerating(false);
+                        break;
+                        
+                    case 'error':
+                        this.hideTyping();
+                        this.addMessage('错误: ' + data.message, 'assistant');
+                        this.setGenerating(false);
+                        break;
+                }
+            }
+            
+            addMessage(content, type) {
+                const messagesContainer = document.getElementById('messages');
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = content;
+                
+                messageDiv.appendChild(contentDiv);
+                messagesContainer.appendChild(messageDiv);
+                
+                // 滚动到底部
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            showTyping() {
+                const messagesContainer = document.getElementById('messages');
+                
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message assistant';
+                typingDiv.id = 'typing-indicator';
+                
+                const typingContent = document.createElement('div');
+                typingContent.className = 'typing-indicator';
+                typingContent.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+                
+                typingDiv.appendChild(typingContent);
+                messagesContainer.appendChild(typingDiv);
+                
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            hideTyping() {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) {
+                    typing.remove();
+                }
+            }
+            
+            updateTypingMessage(message) {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) {
+                    const content = typing.querySelector('.typing-indicator');
+                    if (content) {
+                        content.innerHTML = `<div class="typing-text">${message}</div>`;
+                    }
+                }
+            }
+            
+            setGenerating(generating) {
+                this.isGenerating = generating;
+                
+                const sendBtn = document.getElementById('sendButton');
+                const stopBtn = document.getElementById('stopButton');
+                const input = document.getElementById('messageInput');
+                
+                if (generating) {
+                    sendBtn.style.display = 'none';
+                    stopBtn.style.display = 'flex';
+                    input.disabled = true;
+                } else {
+                    sendBtn.style.display = 'flex';
+                    stopBtn.style.display = 'none';
+                    input.disabled = false;
+                    sendBtn.disabled = !input.value.trim();
+                }
+            }
+            
+            stopGeneration() {
+                if (this.isGenerating && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'interrupt' }));
+                    this.setGenerating(false);
+                }
+            }
+            
+            // 設置相關方法
+            loadSettings() {
+                const savedSettings = localStorage.getItem('gpt-oss-settings');
+                if (savedSettings) {
+                    this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+                }
+            }
+            
+            updateSettings(newSettings) {
+                this.settings = { ...this.settings, ...newSettings };
+                console.log('設置已更新:', this.settings);
+            }
+            
+            // 修改sendMessage以包含設置
+            sendMessage() {
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+                
+                if (!message || !this.isConnected || this.isGenerating) {
+                    return;
+                }
+                
+                // 隐藏欢迎消息
+                const welcome = document.getElementById('welcome');
+                if (welcome) {
+                    welcome.style.display = 'none';
+                }
+                
+                // 添加用户消息到界面
+                this.addMessage(message, 'user');
+                
+                // 发送消息到服务器（包含設置）
+                const messageData = {
+                    type: 'chat',
+                    message: message,
+                    settings: this.settings  // 添加設置到消息中
+                };
+                
+                this.ws.send(JSON.stringify(messageData));
+                
+                // 清空输入框
+                input.value = '';
+                this.autoResize(input);
+                document.getElementById('sendButton').disabled = true;
+                
+                console.log('消息已发送:', message, '設置:', this.settings);
+            }
+        }
+        
+        // 全局函数
+        function startNewChat() {
+            location.reload();
+        }
+        
+        // 對話管理函數
+        async function loadConversations() {
+            try {
+                const response = await fetch('/conversations?limit=20');
+                const data = await response.json();
+                displayConversations(data.conversations);
+            } catch (error) {
+                console.error('載入對話列表失敗:', error);
+            }
+        }
+        
+        async function editConversationTitle(conversationId, currentTitle) {
+            const newTitle = prompt('輸入新標題:', currentTitle);
+            if (newTitle && newTitle !== currentTitle) {
+                try {
+                    const response = await fetch(`/conversations/${conversationId}/title`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ title: newTitle })
+                    });
+                    
+                    if (response.ok) {
+                        loadConversations(); // 重新載入對話列表
+                    } else {
+                        alert('更新標題失敗');
+                    }
+                } catch (error) {
+                    console.error('更新標題錯誤:', error);
+                    alert('更新標題失敗');
+                }
+            }
+        }
+        
+        async function deleteConversation(conversationId) {
+            if (confirm('確定要刪除這個對話嗎？')) {
+                try {
+                    const response = await fetch(`/conversations/${conversationId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        loadConversations(); // 重新載入對話列表
+                    } else {
+                        alert('刪除失敗');
+                    }
+                } catch (error) {
+                    console.error('刪除對話錯誤:', error);
+                    alert('刪除失敗');
+                }
+            }
+        }
+        
+        async function loadConversation(conversationId) {
+            try {
+                const response = await fetch(`/conversations/${conversationId}`);
+                const conversation = await response.json();
+                
+                if (conversation.error) {
+                    alert('載入對話失敗');
+                    return;
+                }
+                
+                // 清空當前聊天
+                const messagesContainer = document.getElementById('messages');
+                messagesContainer.innerHTML = '';
+                
+                // 載入歷史消息
+                conversation.messages.forEach(msg => {
+                    window.chatApp.addMessage(msg.user, 'user');
+                    window.chatApp.addMessage(msg.assistant, 'assistant');
+                });
+                
+                // 隱藏歡迎消息
+                const welcome = document.getElementById('welcome');
+                if (welcome) {
+                    welcome.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('載入對話錯誤:', error);
+                alert('載入對話失敗');
+            }
+        }
+
+        // 設置相關函數
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('open');
+        }
+
+        function applySettings() {
+            const responseLength = document.getElementById('responseLength').value;
+            const temperature = document.getElementById('temperature').value;
+            const responseMode = document.getElementById('responseMode').value;
+            
+            // 保存設置到本地存儲
+            const settings = {
+                responseLength: parseInt(responseLength),
+                temperature: parseFloat(temperature),
+                responseMode: responseMode
+            };
+            
+            localStorage.setItem('gpt-oss-settings', JSON.stringify(settings));
+            
+            // 更新聊天實例的設置
+            if (window.chatApp) {
+                window.chatApp.updateSettings(settings);
+            }
+            
+            // 顯示確認消息
+            alert('設置已保存！');
+            toggleSettings();
+        }
+
+        function resetSettings() {
+            document.getElementById('responseLength').value = '2048';
+            document.getElementById('temperature').value = '0.7';
+            document.getElementById('temperatureValue').textContent = '0.7';
+            document.getElementById('responseMode').value = 'balanced';
+            
+            // 清除本地存儲
+            localStorage.removeItem('gpt-oss-settings');
+            
+            alert('設置已重置為預設值！');
+        }
+
+        async function clearHistory() {
+            if (!confirm('確定要清除對話歷史嗎？這將會移除上下文記憶，但不會影響當前頁面的對話顯示。')) {
+                return;
+            }
+            
+            if (window.chatApp && window.chatApp.sessionId) {
+                try {
+                    const response = await fetch(`/sessions/${window.chatApp.sessionId}/history`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        alert('對話歷史已清除！');
+                    } else {
+                        alert('清除失敗，請稍後再試。');
+                    }
+                } catch (error) {
+                    console.error('清除歷史時出錯:', error);
+                    alert('清除失敗，請檢查網路連接。');
+                }
+            }
+        }
+        
+        // 搜索相關函數
+        function debounce(func, delay) {
+            let timeoutId;
+            return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+        
+        async function performSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const query = searchInput.value.trim();
+            
+            if (query === '') {
+                loadConversations(); // 如果搜索為空，顯示所有對話
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/conversations/search?q=${encodeURIComponent(query)}&limit=20`);
+                const data = await response.json();
+                displayConversations(data.conversations);
+            } catch (error) {
+                console.error('搜索失敗:', error);
+            }
+        }
+        
+        function displayConversations(conversations) {
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.innerHTML = '';
+            
+            conversations.forEach(conv => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.innerHTML = `
+                    <div class="chat-item-content" title="${conv.title}">${conv.title}</div>
+                    <div class="chat-item-actions">
+                        <button class="chat-action-btn" onclick="editConversationTitle('${conv.id}', '${conv.title}')" title="編輯標題">✏️</button>
+                        <button class="chat-action-btn" onclick="deleteConversation('${conv.id}')" title="刪除對話">🗑️</button>
+                    </div>
+                `;
+                
+                chatItem.addEventListener('click', (e) => {
+                    if (!e.target.closest('.chat-item-actions')) {
+                        loadConversation(conv.id);
+                    }
+                });
+                
+                chatHistory.appendChild(chatItem);
+            });
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            window.chatApp = new GPTOSSChat();
+            
+            // 載入對話列表
+            loadConversations();
+            
+            // 搜索功能
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', debounce(performSearch, 300));
+            
+            // Temperature 滑桿事件
+            const tempSlider = document.getElementById('temperature');
+            const tempValue = document.getElementById('temperatureValue');
+            
+            if (tempSlider && tempValue) {
+                tempSlider.addEventListener('input', (e) => {
+                    tempValue.textContent = e.target.value;
+                });
+                
+                // 載入保存的設置
+                const savedSettings = localStorage.getItem('gpt-oss-settings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    document.getElementById('responseLength').value = settings.responseLength;
+                    document.getElementById('temperature').value = settings.temperature;
+                    tempValue.textContent = settings.temperature;
+                    document.getElementById('responseMode').value = settings.responseMode;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

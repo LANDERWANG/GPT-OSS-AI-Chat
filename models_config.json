@@ -1,0 +1,28 @@
+{
+  "models": {
+    "GPT_OSS": {
+      "model_id": "openai/gpt-oss-20b",
+      "description": "OpenAI GPT-OSS 20B模型 - 高質量推理和對話"
+    }
+  },
+  "generation_settings": {
+    "conservative": {
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 50,
+      "max_new_tokens": 256
+    },
+    "creative": {
+      "temperature": 0.9,
+      "top_p": 0.95,
+      "top_k": 40,
+      "max_new_tokens": 512
+    },
+    "focused": {
+      "temperature": 0.5,
+      "top_p": 0.8,
+      "top_k": 20,
+      "max_new_tokens": 200
+    }
+  }
+}

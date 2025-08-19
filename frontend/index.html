@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-OSS 智能交互系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>GPT-OSS</h1>
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <span class="icon">💬</span>
+                    新对话
+                </button>
+            </div>
+            
+            <!-- 设置按钮 -->
+            <div class="sidebar-menu">
+                <button class="menu-item" onclick="toggleSettings()">
+                    <span class="icon">⚙️</span>
+                    设置
+                </button>
+            </div>
+            
+            <!-- 会话历史 -->
+            <div class="chat-history">
+                <div class="history-section">
+                    <h3>今天</h3>
+                    <div id="today-sessions" class="session-list">
+                        <!-- 会话历史将通过JS动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主聊天区域 -->
+        <div class="chat-container">
+            <!-- 聊天消息区域 -->
+            <div class="chat-messages" id="chat-messages">
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-icon">🤖</div>
+                    <h2>欢迎使用 GPT-OSS 智能交互系统</h2>
+                    <p>基于 openai/gpt-oss-20b 模型的智能对话系统</p>
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="message-input" 
+                            placeholder="发送消息..." 
+                            rows="1"
+                            onkeydown="handleKeyDown(event)"
+                        ></textarea>
+                        <button id="send-btn" onclick="sendMessage()" disabled>
+                            <span class="send-icon">📤</span>
+                        </button>
+                        <button id="stop-btn" onclick="stopGeneration()" style="display: none;">
+                            <span class="stop-icon">⏹️</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 状态栏 -->
+                <div class="status-bar">
+                    <div class="model-selector">
+                        <span class="status-icon">🌐</span>
+                        <select id="model-select" onchange="updateModel()">
+                            <option value="GPT_OSS">gpt-oss:20b</option>
+                        </select>
+                    </div>
+                    <div class="generation-style">
+                        <span class="turbo-icon">⚡</span>
+                        <select id="style-select" onchange="updateGenerationStyle()">
+                            <option value="conservative">保守</option>
+                            <option value="creative">创意</option>
+                            <option value="focused">专注</option>
+                        </select>
+                    </div>
+                    <div class="connection-status" id="connection-status">
+                        <span class="status-dot offline"></span>
+                        <span>离线</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settings-panel" style="display: none;">
+        <div class="settings-content">
+            <h3>系统设置</h3>
+            <div class="setting-item">
+                <label>API 服务器地址:</label>
+                <input type="text" id="api-url" value="localhost:8000" />
+            </div>
+            <div class="setting-item">
+                <label>最大历史消息数:</label>
+                <input type="number" id="max-history" value="10" min="1" max="50" />
+            </div>
+            <div class="setting-item">
+                <label>自动保存对话:</label>
+                <input type="checkbox" id="auto-save" checked />
+            </div>
+            <div class="setting-actions">
+                <button onclick="saveSettings()">保存设置</button>
+                <button onclick="toggleSettings()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
