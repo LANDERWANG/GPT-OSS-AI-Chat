@@ -384,20 +384,145 @@
 
         .message-content {
             max-width: 70%;
-            padding: 12px 16px;
+            padding: 16px 20px;
             border-radius: 18px;
             font-size: 15px;
-            line-height: 1.5;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         .message.user .message-content {
             background-color: #007bff;
             color: white;
+            font-weight: 500;
         }
 
         .message.assistant .message-content {
-            background-color: #f1f3f4;
+            background-color: #f8f9fa;
             color: #333;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 改進AI回應的文字排版 */
+        .message.assistant .message-content {
+            text-align: left;
+        }
+
+        .message.assistant .message-content p {
+            margin: 0 0 12px 0;
+            line-height: 1.7;
+        }
+
+        .message.assistant .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 支援列表格式 */
+        .message.assistant .message-content ul,
+        .message.assistant .message-content ol {
+            margin: 8px 0 12px 20px;
+            padding-left: 0;
+        }
+
+        .message.assistant .message-content li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        /* 支援引用和重點文字 */
+        .message.assistant .message-content strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .message.assistant .message-content em {
+            font-style: italic;
+            color: #34495e;
+        }
+
+        /* 程式碼區塊樣式 */
+        .message.assistant .message-content code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: #d63384;
+        }
+
+        .message.assistant .message-content pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        /* 標題樣式 */
+        .message.assistant .message-content h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 16px 0 12px 0;
+            line-height: 1.3;
+        }
+
+        .message.assistant .message-content h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #34495e;
+            margin: 14px 0 10px 0;
+            line-height: 1.4;
+        }
+
+        .message.assistant .message-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5a6c7d;
+            margin: 12px 0 8px 0;
+            line-height: 1.4;
+        }
+
+        /* 改進列表樣式 */
+        .message.assistant .message-content ul {
+            list-style-type: disc;
+            margin: 10px 0 14px 24px;
+        }
+
+        .message.assistant .message-content ol {
+            list-style-type: decimal;
+            margin: 10px 0 14px 24px;
+        }
+
+        .message.assistant .message-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            padding-left: 4px;
+        }
+
+        /* 分隔線 */
+        .message.assistant .message-content hr {
+            border: none;
+            border-top: 1px solid #e9ecef;
+            margin: 16px 0;
+        }
+
+        /* 引用區塊 */
+        .message.assistant .message-content blockquote {
+            border-left: 4px solid #007bff;
+            padding-left: 16px;
+            margin: 12px 0;
+            color: #5a6c7d;
+            font-style: italic;
+            background-color: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 4px;
         }
 
         .typing-indicator {
@@ -840,13 +965,55 @@
                 
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
-                contentDiv.textContent = content;
+                
+                // 格式化AI回應文字
+                if (type === 'assistant') {
+                    contentDiv.innerHTML = this.formatMessage(content);
+                } else {
+                    contentDiv.textContent = content;
+                }
                 
                 messageDiv.appendChild(contentDiv);
                 messagesContainer.appendChild(messageDiv);
                 
                 // 滚动到底部
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            formatMessage(text) {
+                // 轉換基本Markdown格式
+                let formatted = text
+                    // 處理段落 - 雙換行轉為段落
+                    .replace(/\n\n+/g, '</p><p>')
+                    // 處理單換行
+                    .replace(/\n/g, '<br>')
+                    // 處理粗體 **text**
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // 處理斜體 *text*
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    // 處理行內程式碼 `code`
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    // 處理無序列表項目
+                    .replace(/^\s*[-*]\s+(.+)/gm, '<li>$1</li>')
+                    // 處理有序列表項目
+                    .replace(/^\s*\d+\.\s+(.+)/gm, '<li>$1</li>')
+                    // 處理標題
+                    .replace(/^### (.+)/gm, '<h3>$1</h3>')
+                    .replace(/^## (.+)/gm, '<h2>$1</h2>')
+                    .replace(/^# (.+)/gm, '<h1>$1</h1>');
+                
+                // 包裝段落標籤
+                if (!formatted.includes('<p>') && !formatted.includes('<h') && !formatted.includes('<li>')) {
+                    formatted = '<p>' + formatted + '</p>';
+                } else if (formatted.includes('<li>')) {
+                    // 包裝列表項目
+                    formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+                }
+                
+                // 清理多餘的空段落
+                formatted = formatted.replace(/<p><\/p>/g, '');
+                
+                return formatted;
             }
             
             showTyping() {
